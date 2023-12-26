@@ -1,5 +1,6 @@
 const { json } = require("express");
 const { Product } = require("../model/Product");
+const { Order } = require("../model/Order");
 
 exports.createProduct = async (req, res) => {
   //this product we have to get from API body
@@ -15,8 +16,12 @@ exports.createProduct = async (req, res) => {
 exports.fetchAllProducts = async (req, res) => {
   //this product we have to get from API body
   //TODO: we have to try with multiple category and brands after change in font-end
-  let query = Product.find({ deleted: { $ne: true } });
-  let totalProductQuery = Product.find({ deleted: { $ne: true } });
+  let condition = {};
+  if (!req.query.admin) {
+    condition.deleted = { $ne: true };
+  }
+  let query = Product.find(condition);
+  let totalProductQuery = Product.find(condition);
 
   if (req.query.category) {
     query = query.find({ category: req.query.category });
