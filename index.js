@@ -7,6 +7,7 @@ const LocalStrategy = require("passport-local").Strategy;
 const crypto = require("crypto");
 const JwtStrategy = require("passport-jwt").Strategy;
 const ExtractJwt = require("passport-jwt").ExtractJwt;
+const cookieParser = require("cookie-parser");
 const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
 const productsRouters = require("./routes/Products");
@@ -17,17 +18,18 @@ const authRouter = require("./routes/Auth");
 const cartRouter = require("./routes/Cart");
 const orderRouter = require("./routes/Orders");
 const { User } = require("./model/User");
-const { isAuth, sanitizeUser } = require("./services/common");
+const { isAuth, sanitizeUser, cookieExtractor } = require("./services/common");
 
 const SECRET_KEY = "SECRET_KEY";
 
 //JWT options
 const opts = {};
-opts.jwtFromRequest = ExtractJwt.fromAuthHeaderAsBearerToken();
+opts.jwtFromRequest = cookieExtractor;
 opts.secretOrKey = SECRET_KEY; //TODO: should not be in code
 
 //middlewares
-
+server.use(express.static("build"));
+server.use(cookieParser());
 server.use(
   session({
     secret: "keyboard cat",
@@ -77,7 +79,7 @@ passport.use(
             return done(null, false, { message: "invalid credentials" });
           }
           const token = jwt.sign(sanitizeUser(user), SECRET_KEY);
-          done(null, token); //this line sends to serializer
+          done(null, { token }); //this line sends to serializer
         }
       );
     } catch (error) {
@@ -91,7 +93,7 @@ passport.use(
   new JwtStrategy(opts, async function (jwt_payload, done) {
     console.log(jwt_payload);
     try {
-      const user = await User.findOne({ id: jwt_payload.sub });
+      const user = await User.findById(jwt_payload.id);
       if (user) {
         return done(null, sanitizeUser(user));
       } else {
@@ -125,10 +127,6 @@ async function main() {
   await mongoose.connect("mongodb://127.0.0.1:27017/ecommerce");
   console.log("Databse connected");
 }
-
-server.get("/", (req, res) => {
-  res.json({ status: "success" });
-});
 
 server.listen(8080, () => {
   console.log("server started");
