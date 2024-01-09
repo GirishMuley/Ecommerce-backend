@@ -10,6 +10,7 @@ const crypto = require("crypto");
 const JwtStrategy = require("passport-jwt").Strategy;
 const ExtractJwt = require("passport-jwt").ExtractJwt;
 const cookieParser = require("cookie-parser");
+
 const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
 const productsRouters = require("./routes/Products");
@@ -23,6 +24,7 @@ const { User } = require("./model/User");
 const { isAuth, sanitizeUser, cookieExtractor } = require("./services/common");
 const { Order } = require("./model/Order");
 const path = require("path");
+
 // Webhook
 
 // TODO: we will capture actual order after deploying out server live on public URL
