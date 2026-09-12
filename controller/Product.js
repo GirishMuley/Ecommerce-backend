@@ -6,7 +6,7 @@ exports.createProduct = async (req, res) => {
   //this product we have to get from API body
   const product = new Product(req.body);
   product.discountPrice = Math.round(
-    product.price * (1 - product.discountPercentage / 100)
+    product.price * (1 - product.discountPercentage / 100),
   );
   try {
     const response = await product.save();
@@ -17,42 +17,41 @@ exports.createProduct = async (req, res) => {
 };
 
 exports.fetchAllProducts = async (req, res) => {
-  //this product we have to get from API body
-
-  let condition = {};
-  if (!req.query.admin) {
-    condition.deleted = { $ne: true };
-  }
-  let query = Product.find(condition);
-  let totalProductQuery = Product.find(condition);
-
-  if (req.query.category) {
-    query = query.find({ category: { $in: req.query.category.split(",") } });
-    totalProductQuery = totalProductQuery.find({
-      category: { $in: req.query.category.split(",") },
-    });
-  }
-  if (req.query.brand) {
-    query = query.find({ brand: { $in: req.query.brand.split(",") } });
-    totalProductQuery = totalProductQuery.find({
-      brand: { $in: req.query.brand.split(",") },
-    });
-  }
-  if (req.query._sort && req.query._order) {
-    query = query.sort({ [req.query._sort]: req.query._order });
-  }
-
-  const totalDocs = await totalProductQuery.count().exec();
-  console.log({ totalDocs });
-
-  if (req.query._page && req.query._limit) {
-    const pageSize = req.query._limit;
-    const page = req.query._page;
-    query = query.skip(pageSize * (page - 1)).limit(pageSize);
-  }
-
   try {
-    const docs = await query.exec();
+    // Build filter ONCE
+    const condition = {};
+    if (!req.query.admin) {
+      condition.deleted = { $ne: true };
+    }
+    if (req.query.category) {
+      condition.category = { $in: req.query.category.split(",") };
+    }
+    if (req.query.brand) {
+      condition.brand = { $in: req.query.brand.split(",") };
+    }
+
+    let query = Product.find(condition).lean();
+
+    if (req.query._sort && req.query._order) {
+      query = query.sort({
+        [req.query._sort]: req.query._order === "desc" ? -1 : 1,
+      });
+    }
+
+    // Parse + sanitize pagination params
+    const page = Math.max(parseInt(req.query._page, 10) || 1, 1);
+    const limit = Math.min(parseInt(req.query._limit, 10) || 10, 100); // cap max limit
+
+    if (req.query._page && req.query._limit) {
+      query = query.skip((page - 1) * limit).limit(limit);
+    }
+
+    // Run count and find in PARALLEL, not sequentially
+    const [totalDocs, docs] = await Promise.all([
+      Product.countDocuments(condition),
+      query.exec(),
+    ]);
+
     res.set("X-Total-Count", totalDocs);
     res.status(200).json(docs);
   } catch (err) {
@@ -77,7 +76,7 @@ exports.updateProduct = async (req, res) => {
       new: true,
     });
     product.discountPrice = Math.round(
-      product.price * (1 - product.discountPercentage / 100)
+      product.price * (1 - product.discountPercentage / 100),
     );
     const updatedProduct = await product.save();
     res.status(200).json(updatedProduct);
