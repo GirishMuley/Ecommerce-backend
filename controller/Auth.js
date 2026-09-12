@@ -80,7 +80,7 @@ exports.resetPasswordRequest = async (req, res) => {
     //also set token in email
 
     const resetPageLink =
-      "http://localhost:3000/reset-password?token=" +
+      "http://localhost:8080/reset-password?token=" +
       resetToken +
       "&email=" +
       email;
