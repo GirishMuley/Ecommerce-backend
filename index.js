@@ -90,13 +90,13 @@ server.use(
 );
 // server.use(express.raw({ type: "application/json" }));
 server.use(express.json()); // to parse req.body
-server.use("/api/products", isAuth(), productsRouters.router); //we can also use JWT token
-server.use("/api/categories", isAuth(), categoriesRouter.router);
-server.use("/api/brands", isAuth(), brandRouter.router);
-server.use("/api/users", isAuth(), usersRouter.router);
-server.use("/api/auth", authRouter.router);
-server.use("/api/cart", isAuth(), cartRouter.router);
-server.use("/api/orders", isAuth(), orderRouter.router);
+server.use("/products", isAuth(), productsRouters.router); //we can also use JWT token
+server.use("/categories", isAuth(), categoriesRouter.router);
+server.use("/brands", isAuth(), brandRouter.router);
+server.use("/users", isAuth(), usersRouter.router);
+server.use("/auth", authRouter.router);
+server.use("/cart", isAuth(), cartRouter.router);
+server.use("/orders", isAuth(), orderRouter.router);
 
 // this line we add to make react router work in case of other routes doesnt match
 server.get("*", (req, res) =>
