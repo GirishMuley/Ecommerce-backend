@@ -49,7 +49,7 @@ server.post(
       case "payment_intent.succeeded":
         const paymentIntentSucceeded = event.data.object;
         const order = await Order.findById(
-          paymentIntentSucceeded.metadata.orderId
+          paymentIntentSucceeded.metadata.orderId,
         );
         order.paymentStatus = "received";
         await order.save();
@@ -62,7 +62,7 @@ server.post(
 
     // Return a 200 response to acknowledge receipt of the event
     response.send();
-  }
+  },
 );
 
 //JWT options
@@ -79,28 +79,28 @@ server.use(
     secret: process.env.SESSION_KEY,
     resave: false, // don't save session if unmodified
     saveUninitialized: false, // don't create session until something stored
-  })
+  }),
 );
 server.use(passport.authenticate("session"));
 
 server.use(
   cors({
     exposedHeaders: ["X-Total-Count"],
-  })
+  }),
 );
 // server.use(express.raw({ type: "application/json" }));
 server.use(express.json()); // to parse req.body
-server.use("/products", isAuth(), productsRouters.router); //we can also use JWT token
-server.use("/categories", isAuth(), categoriesRouter.router);
-server.use("/brands", isAuth(), brandRouter.router);
-server.use("/users", isAuth(), usersRouter.router);
-server.use("/auth", authRouter.router);
-server.use("/cart", isAuth(), cartRouter.router);
-server.use("/orders", isAuth(), orderRouter.router);
+server.use("/api/products", isAuth(), productsRouters.router); //we can also use JWT token
+server.use("/api/categories", isAuth(), categoriesRouter.router);
+server.use("/api/brands", isAuth(), brandRouter.router);
+server.use("/api/users", isAuth(), usersRouter.router);
+server.use("/api/auth", authRouter.router);
+server.use("/api/cart", isAuth(), cartRouter.router);
+server.use("/api/orders", isAuth(), orderRouter.router);
 
 // this line we add to make react router work in case of other routes doesnt match
 server.get("*", (req, res) =>
-  res.sendFile(path.resolve("build", "index.html"))
+  res.sendFile(path.resolve("build", "index.html")),
 );
 
 //passport strategies
@@ -109,7 +109,7 @@ passport.use(
   new LocalStrategy({ usernameField: "email" }, async function (
     email,
     password,
-    done
+    done,
   ) {
     //by default passport uses username
     try {
@@ -130,15 +130,15 @@ passport.use(
           }
           const token = jwt.sign(
             sanitizeUser(user),
-            process.env.JWT_SECRET_KEY
+            process.env.JWT_SECRET_KEY,
           );
           done(null, { id: user.id, role: user.role, token }); //this line sends to serializer
-        }
+        },
       );
     } catch (error) {
       done(error);
     }
-  })
+  }),
 );
 
 passport.use(
@@ -156,7 +156,7 @@ passport.use(
     } catch (error) {
       return done(err, false);
     }
-  })
+  }),
 );
 
 //this creates session variable req.user on being called from callbacks
