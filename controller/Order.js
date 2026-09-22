@@ -126,9 +126,13 @@ exports.fetchAllOrders = async (req, res) => {
 
     let query = Order.find(condition);
 
-    if (req.query._sort && req.query._order) {
+    if (req.query._sort) {
+      const sortField = req.query._sort;
+
+      const sortOrder = req.query._order === "desc" ? -1 : 1;
+
       query = query.sort({
-        [req.query._sort]: req.query._order,
+        [sortField]: sortOrder,
       });
     }
 
