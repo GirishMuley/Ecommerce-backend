@@ -14,88 +14,145 @@ const formatOrder = (order) => {
   };
 };
 
+// Fetch orders for logged-in user
 exports.fetchOrdersByUser = async (req, res) => {
   const { id } = req.user;
+
   try {
     const orders = await Order.find({ user: id });
+
     const formattedOrders = orders.map(formatOrder);
+
     res.status(200).json(formattedOrders);
   } catch (err) {
-    res.status(400).json(err);
+    res.status(400).json({
+      message: err.message,
+    });
   }
 };
 
+// Create order
 exports.createOrder = async (req, res) => {
-  const order = new Order(req.body);
-  //here we have to update stocks
-  for (let item of order.items) {
-    let product = await Product.findOne({ _id: item.product.id });
-    product.$inc("stock", -1 * item.quantity);
-    await product.save();
-    //for optimun performance we should make inventory outside of product
-  }
   try {
+    const order = new Order(req.body);
+
+    // Update product stock
+    for (let item of order.items) {
+      const product = await Product.findOne({
+        _id: item.product.id,
+      });
+
+      if (!product) {
+        return res.status(404).json({
+          message: "Product not found",
+        });
+      }
+
+      product.stock -= item.quantity;
+
+      await product.save();
+    }
+
     const doc = await order.save();
+
     const user = await User.findById(order.user);
-    //we can use await for this also
+
+    // Send invoice email
     sendMail({
       to: user.email,
       html: invoiceTemplate(order),
       subject: "Order Received",
     });
+
     res.status(201).json(formatOrder(doc));
   } catch (err) {
-    res.status(400).json(err);
+    res.status(400).json({
+      message: err.message,
+    });
   }
 };
 
+// Delete order
 exports.deleteOrder = async (req, res) => {
   const { id } = req.params;
+
   try {
     const order = await Order.findByIdAndDelete(id);
+
+    if (!order) {
+      return res.status(404).json({
+        message: "Order not found",
+      });
+    }
+
     res.status(200).json(formatOrder(order));
   } catch (err) {
-    res.status(400).json(err);
+    res.status(400).json({
+      message: err.message,
+    });
   }
 };
 
+// Update order
 exports.updateOrder = async (req, res) => {
   const { id } = req.params;
+
   try {
     const order = await Order.findByIdAndUpdate(id, req.body, {
       new: true,
+      runValidators: true,
     });
+
+    if (!order) {
+      return res.status(404).json({
+        message: "Order not found",
+      });
+    }
+
     res.status(200).json(formatOrder(order));
   } catch (err) {
-    res.status(400).json(err);
+    res.status(400).json({
+      message: err.message,
+    });
   }
 };
 
+// Fetch all orders
 exports.fetchAllOrders = async (req, res) => {
-  //this product we have to get from API body
-  //TODO: we have to try with multiple category and brands after change in font-end
-  let query = Order.find({ deleted: { $ne: true } });
-  let totalOrdersQuery = Order.find({ deleted: { $ne: true } });
-
-  if (req.query._sort && req.query._order) {
-    query = query.sort({ [req.query._sort]: req.query._order });
-  }
-
-  const totalDocs = await totalOrdersQuery.count().exec();
-  console.log({ totalDocs });
-
-  if (req.query._page && req.query._limit) {
-    const pageSize = req.query._limit;
-    const page = req.query._page;
-    query = query.skip(pageSize * (page - 1)).limit(pageSize);
-  }
-
   try {
-    const docs = await query.exec();
+    const condition = {
+      deleted: { $ne: true },
+    };
+
+    let query = Order.find(condition);
+
+    if (req.query._sort && req.query._order) {
+      query = query.sort({
+        [req.query._sort]: req.query._order === "desc" ? -1 : 1,
+      });
+    }
+
+    const page = Math.max(parseInt(req.query._page, 10) || 1, 1);
+
+    const limit = Math.min(parseInt(req.query._limit, 10) || 10, 100);
+
+    if (req.query._page && req.query._limit) {
+      query = query.skip((page - 1) * limit).limit(limit);
+    }
+
+    const [totalDocs, docs] = await Promise.all([
+      Order.countDocuments(condition),
+      query.exec(),
+    ]);
+
     const formattedOrders = docs.map(formatOrder);
+
     res.set("X-Total-Count", totalDocs);
+
     res.status(200).json(formattedOrders);
   } catch (err) {
-    res.status(400).json(err);
+    res.status(400).json({
+      message: err.message,
+    });
   }
 };
