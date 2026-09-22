@@ -30,7 +30,7 @@ exports.fetchAllProducts = async (req, res) => {
       condition.brand = { $in: req.query.brand.split(",") };
     }
 
-    let query = Product.find(condition).lean();
+    let query = Product.find(condition).lean({ virtuals: true });
 
     if (req.query._sort && req.query._order) {
       query = query.sort({
