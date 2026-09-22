@@ -3,12 +3,23 @@ const { Product } = require("../model/Product");
 const { User } = require("../model/User");
 const { sendMail, invoiceTemplate } = require("../services/common");
 
+const formatOrder = (order) => {
+  const orderObject = order.toObject ? order.toObject() : order;
+
+  const { _id, ...rest } = orderObject;
+
+  return {
+    id: _id,
+    ...rest,
+  };
+};
+
 exports.fetchOrdersByUser = async (req, res) => {
   const { id } = req.user;
   try {
     const orders = await Order.find({ user: id });
-
-    res.status(200).json(orders);
+    const formattedOrders = orders.map(formatOrder);
+    res.status(200).json(formattedOrders);
   } catch (err) {
     res.status(400).json(err);
   }
@@ -32,7 +43,7 @@ exports.createOrder = async (req, res) => {
       html: invoiceTemplate(order),
       subject: "Order Received",
     });
-    res.status(201).json(doc);
+    res.status(201).json(formatOrder(doc));
   } catch (err) {
     res.status(400).json(err);
   }
@@ -42,7 +53,7 @@ exports.deleteOrder = async (req, res) => {
   const { id } = req.params;
   try {
     const order = await Order.findByIdAndDelete(id);
-    res.status(200).json(order);
+    res.status(200).json(formatOrder(order));
   } catch (err) {
     res.status(400).json(err);
   }
@@ -54,7 +65,7 @@ exports.updateOrder = async (req, res) => {
     const order = await Order.findByIdAndUpdate(id, req.body, {
       new: true,
     });
-    res.status(200).json(order);
+    res.status(200).json(formatOrder(order));
   } catch (err) {
     res.status(400).json(err);
   }
@@ -81,8 +92,9 @@ exports.fetchAllOrders = async (req, res) => {
 
   try {
     const docs = await query.exec();
+    const formattedOrders = docs.map(formatOrder);
     res.set("X-Total-Count", totalDocs);
-    res.status(200).json(docs);
+    res.status(200).json(formattedOrders);
   } catch (err) {
     res.status(400).json(err);
   }
