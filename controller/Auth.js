@@ -23,7 +23,7 @@ exports.createUser = async (req, res) => {
           } else {
             const token = jwt.sign(
               sanitizeUser(doc),
-              process.env.JWT_SECRET_KEY
+              process.env.JWT_SECRET_KEY,
             );
             res
               .cookie("jwt", token, {
@@ -34,7 +34,7 @@ exports.createUser = async (req, res) => {
               .json({ id: doc.id, role: doc.role });
           }
         });
-      }
+      },
     );
   } catch (error) {
     res.status(400).json(error);
@@ -80,7 +80,7 @@ exports.resetPasswordRequest = async (req, res) => {
     //also set token in email
 
     const resetPageLink =
-      "http://localhost:8080/reset-password?token=" +
+      "${process.env.HOST_URL}/reset-password?token=" +
       resetToken +
       "&email=" +
       email;
@@ -130,7 +130,7 @@ exports.resetPassword = async (req, res) => {
         } else {
           res.sendStatus(400);
         }
-      }
+      },
     );
   } else {
     res.sendStatus(400);
