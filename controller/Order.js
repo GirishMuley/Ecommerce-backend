@@ -3,6 +3,12 @@ const { Product } = require("../model/Product");
 const { User } = require("../model/User");
 const { sendMail, invoiceTemplate } = require("../services/common");
 
+const formatOrder = (order) => {
+  const orderObject = order.toObject ? order.toObject() : order;
+  const { _id, ...rest } = orderObject;
+  return { id: _id, ...rest };
+};
+
 exports.fetchOrdersByUser = async (req, res) => {
   const { id } = req.user;
   try {
@@ -84,8 +90,9 @@ exports.fetchAllOrders = async (req, res) => {
 
   try {
     const docs = await query.exec();
+    const formattedOrders = docs.map(formatOrder);
     res.set("X-Total-Count", totalDocs);
-    res.status(200).json(docs);
+    res.status(200).json(formattedOrders);
   } catch (err) {
     res.status(400).json(err);
   }
