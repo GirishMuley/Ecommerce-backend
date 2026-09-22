@@ -2,6 +2,15 @@ const { json } = require("express");
 const { Product } = require("../model/Product");
 const { Order } = require("../model/Order");
 
+const formatProduct = (product) => {
+  const { _id, ...rest } = product.toObject ? product.toObject() : product;
+
+  return {
+    id: _id,
+    ...rest,
+  };
+};
+
 exports.createProduct = async (req, res) => {
   //this product we have to get from API body
   const product = new Product(req.body);
@@ -52,8 +61,10 @@ exports.fetchAllProducts = async (req, res) => {
       query.exec(),
     ]);
 
+    const products = docs.map(formatProduct);
+
     res.set("X-Total-Count", totalDocs);
-    res.status(200).json(docs);
+    res.status(200).json(products);
   } catch (err) {
     res.status(400).json(err);
   }
@@ -63,7 +74,7 @@ exports.fetchProductById = async (req, res) => {
   const { id } = req.params;
   try {
     const product = await Product.findById(id).lean({ virtuals: true });
-    res.status(200).json(product);
+    res.status(200).json(formatProduct(product));
   } catch (error) {
     res.status(400).json(error);
   }
