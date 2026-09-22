@@ -62,7 +62,7 @@ exports.fetchAllProducts = async (req, res) => {
 exports.fetchProductById = async (req, res) => {
   const { id } = req.params;
   try {
-    const product = await Product.findById(id);
+    const product = await Product.findById(id).lean({ virtuals: true });
     res.status(200).json(product);
   } catch (error) {
     res.status(400).json(error);
