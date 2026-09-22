@@ -79,11 +79,7 @@ exports.resetPasswordRequest = async (req, res) => {
 
     //also set token in email
 
-    const resetPageLink =
-      "${process.env.HOST_URL}/reset-password?token=" +
-      resetToken +
-      "&email=" +
-      email;
+    const resetPageLink = `${process.env.HOST_URL}/reset-password?token=${resetToken}&email=${email}`;
     const subject = "reset password for e-commerce";
     const html = `<p>Click <a href='${resetPageLink}'>here</a> to Reset 
   Password</p>`;
